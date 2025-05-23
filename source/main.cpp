@@ -40,6 +40,28 @@ constexpr int Module_OverlayLoader  = 348;
 constexpr Result ResultSuccess      = MAKERESULT(0, 0);
 constexpr Result ResultParseError   = MAKERESULT(Module_OverlayLoader, 1);
 
+
+static void switchToInternationalVersion() {
+    Result rc;
+
+    // 初始化系统服务
+    if (R_FAILED(rc = smInitialize())) return;
+    if (R_FAILED(rc = setsysInitialize())) return;
+    if (R_FAILED(rc = spsmInitialize())) return;
+
+    // 检测是否为腾讯版本
+    bool isTencentVersion = false;
+    rc = setsysGetT(&isTencentVersion);
+    if (R_SUCCEEDED(rc) && isTencentVersion) {
+        // 如果是腾讯版本，切换到国际版本
+        setsysSetT(false);
+        setsysSetRegionCode(SetRegion_HTK); // 设置为国际版本
+        //spsmShutdown(true); // 自动重启系统
+    }
+
+    setsysExit(); // 释放系统服务
+}
+
 std::tuple<Result, std::string, std::string> getOverlayInfo(std::string filePath) {
     FILE *file = fopen(filePath.c_str(), "r");
 
@@ -245,5 +267,7 @@ public:
 };
 
 int main(int argc, char **argv) {
+    // 调用版本切换功能
+    switchToInternationalVersion();
     return tsl::loop<OverlayTeslaMenu, tsl::impl::LaunchFlags::None>(argc, argv);
 }
